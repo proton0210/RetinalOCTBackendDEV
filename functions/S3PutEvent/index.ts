@@ -2,6 +2,8 @@ import {
   DynamoDBClient,
   GetItemCommand,
   GetItemCommandInput,
+  UpdateItemCommand,
+  UpdateItemCommandInput,
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {
@@ -55,6 +57,11 @@ export const handler = async (event: any): Promise<void> => {
     const body = {
       ...result,
     };
+    const creditsUpdate = await UpdateCreditInUsersTable(tableName, clerkID);
+    if (!creditsUpdate) {
+      console.error("Error updating credits in the table");
+      return;
+    }
     await sendEmailToUser(userEmail, body);
   }
 };
@@ -166,10 +173,24 @@ async function sendEmailToUser(toEmail: string, body: any): Promise<void> {
   }
 }
 
-/*
- Write me typesscript function using aws ses to send email to user
- */
-// Path: functions/SendEmail/index.ts
-// Compare this snippet from stacks/s3-stack.ts:
-// import * as cdk from "aws-cdk-lib";
-// import { Construct } from "constructs";
+async function UpdateCreditInUsersTable(
+  tableName: string,
+  clerkID: string
+): Promise<boolean> {
+  // we need to update the Credits property in the Users table, need to subtract one credit use updarting the table
+
+  const updateItemCommand: UpdateItemCommandInput = {
+    TableName: tableName,
+    Key: marshall({ ClerkID: clerkID }),
+    UpdateExpression: "SET Credits = Credits - :val",
+    ExpressionAttributeValues: marshall({ ":val": 1 }),
+  };
+
+  try {
+    await ddbClient.send(new UpdateItemCommand(updateItemCommand));
+    return true;
+  } catch (error) {
+    console.error("Error updating user credits:", error);
+    return false;
+  }
+}
