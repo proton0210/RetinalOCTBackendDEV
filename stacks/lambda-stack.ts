@@ -21,7 +21,7 @@ export class LambdaStack extends cdk.Stack {
     // Give PutEventLambda permission access to aws Rekognitoin using iam policty stattement
     this.putEventLambda.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ["rekognition:*", "s3:*", "ses:*"],
+        actions: ["rekognition:*", "s3:*", "ses:*", "dynamodb:*"],
         resources: ["*"],
       })
     );
